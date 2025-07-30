@@ -1,100 +1,72 @@
-# Centralized Automation Script System
+# Centralized Automation Script Orchestrator
 
-This repository contains a centralized, menu-driven system for managing and executing complex automation scripts, primarily for Oracle Cloud Infrastructure (OCI), Docker, and Coolify platform operations.
-
-The system is built around a main orchestrator script, `main.sh`, which provides a simple, interactive menu to select and run automation tasks safely and securely.
+Welcome to your centralized script distribution system. This repository contains a powerful, menu-driven framework for managing and executing complex automation scripts for your Oracle Cloud VPS, Docker, Coolify, and general system management needs.
 
 ## Architecture
 
-### Key Features:
+This system is designed for use in a **private GitHub repository**. This simplifies the architecture significantly, allowing for a secure yet highly maintainable approach to configuration.
 
-*   **Menu-Driven Interface:** `main.sh` provides a user-friendly menu, so you don't have to memorize a long list of script names and paths.
-*   **Centralized Script Repository:** All automation scripts are stored and version-controlled in this single GitHub repository, making them easy to update, manage, and audit.
-*   **Secure Secret Management:** The system is designed to keep all sensitive credentials—like API keys, tokens, and passwords—out of the codebase by using a secure runtime substitution method.
-
-### How Secrets Are Handled
-
-A core design principle of this system is to **never hardcode credentials** in scripts. We use a secure template and substitution model.
-
-*   **Template Syntax:** Within any given script, all sensitive data is represented by a placeholder, such as `{{DOCKER_REGISTRY_TOKEN}}`.
-*   **Runtime Substitution:** When you select a script to run from the `main.sh` menu, the orchestrator securely substitutes these placeholders with values from **environment variables** that are set on your host machine.
-
-> **Architectural Note:** The initial proposal to fetch secrets directly from the GitHub Secrets API is not technically feasible, as the GitHub API is designed to prevent this for security reasons. The adopted approach of using local environment variables is the industry standard for providing credentials to applications and scripts running in a secure server environment.
+*   **Central Configuration:** All configuration, including credentials, API keys, and identifiers, is stored in a single file: `config.env`. This means you only need to update a variable in one place, and all scripts that use it will receive the update.
+*   **Orchestrator Model:** The `main.sh` script acts as the single entry point. It provides a user-friendly menu that lists all available scripts, grouped by category, and handles their execution.
+*   **Modular Scripts:** Each script in the subdirectories (`oracle-cloud/`, `docker-advanced/`, etc.) is designed to perform a specific, complex task. They are written to be robust, with clear output and error handling.
 
 ---
 
-## How to Use
+## Setup and Usage
 
-### Prerequisites
+### Step 1: Clone the Repository
 
-*   A Linux environment (e.g., Oracle Linux, Ubuntu) with `bash` and `curl` installed.
-*   The necessary credentials and identifiers (API keys, OCIDs, etc.) for the cloud services you wish to automate.
-
-### 1. Set Up Secrets on Your Host Machine
-
-Before running the orchestrator, you must `export` the required secrets as environment variables. The variable name must **exactly match** the placeholder in the script, but without the `{{...}}`.
-
-**Example Setup:**
+Since this is a private repository, clone it to the machine where you intend to run the scripts (e.g., your main OCI instance or a dedicated management server).
 
 ```bash
-# For Oracle Cloud Scripts
-export DEFAULT_SL_OCI="your_oci_cli_profile_name"
-export NETWORK_SECURITY_GROUP_ID="ocid1.nsg.oc1.iad.xxxxxxxxxxxxxxxxx"
-
-# For Docker Private Registry Scripts
-export DOCKER_REGISTRY_URL="your-registry.example.com"
-export DOCKER_USERNAME="your-docker-username"
-export DOCKER_REGISTRY_TOKEN="your_docker_access_token_or_password"
-
-# For Coolify Scripts
-export COOLIFY_API_KEY="your_coolify_api_bearer_token"
-export COOLIFY_DEPLOYMENT_WEBHOOK="https://coolify.app.com/api/v1/applications/xyz/deployments"
+git clone git@github.com:Daniel-OS01/scripts.git
+cd scripts
 ```
 
-**To make these variables persistent across reboots**, add the `export` commands to your shell's startup file (e.g., `~/.bashrc`, `~/.bash_profile`, or `~/.zshrc`) and then reload your shell with `source ~/.bashrc` or by logging out and back in.
+### Step 2: Configure Your Credentials
 
-### 2. Run the Orchestrator
+Open the `config.env` file with a text editor (e.g., `nano config.env`).
 
-Execute the following command in your terminal. It is recommended to run it with `sudo` if the underlying scripts are expected to perform system-level changes.
+This file contains all the settings and secrets the scripts will need. Fill in the placeholder values for each variable with your actual credentials.
+
+**Example Snippet from `config.env`:**
+```bash
+# --- Oracle Cloud Infrastructure (OCI) ---
+export OCI_USER_OCID="ocid1.user.oc1..xxxxxxxxxxxx"
+export OCI_TENANCY_OCID="ocid1.tenancy.oc1..xxxxxxxxxxxx"
+# ... and so on
+```
+
+### Step 3: Run the Orchestrator
+
+Once the `config.env` file is populated, you can run the main orchestrator. First, make it executable:
 
 ```bash
-sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/Daniel-OS01/scripts/refs/heads/main/main.sh)"
+chmod +x main.sh
 ```
 
-This command downloads and runs the `main.sh` script, which will validate its dependencies and present you with the main menu.
+Then run it:
+```bash
+./main.sh
+```
+
+This will display the main menu, from which you can select and run any of the available scripts. The orchestrator will prompt you for any arguments the selected script requires.
 
 ---
 
-## Available Scripts
+## Scripts Catalog
 
-The following scripts are currently available. The "Required Secrets" are the environment variables you must set before running the script.
+Here is a list of all the scripts currently available in the system.
 
-| # | Script Name                        | Description                                          | Required Secrets                                                                                             |
-|:-:|:-----------------------------------|:-----------------------------------------------------|:-------------------------------------------------------------------------------------------------------------|
-| 1 | `configure-network.sh`             | Simulates adding an HTTPS ingress rule to an OCI NSG.  | `DEFAULT_SL_OCI`, `NETWORK_SECURITY_GROUP_ID`                                                                |
-| 2 | `advanced-container-management.sh` | Simulates logging into a private registry and cleaning up Docker resources. | `DOCKER_REGISTRY_URL`, `DOCKER_USERNAME`, `DOCKER_REGISTRY_TOKEN`                                              |
-| 3 | `deployment.sh`                    | Simulates triggering a deployment in Coolify via webhook. | `COOLIFY_API_KEY`, `COOLIFY_DEPLOYMENT_WEBHOOK`                                                              |
-
----
-
-## How to Add New Scripts
-
-To extend the system with a new script, follow these three steps:
-
-1.  **Create the Script File:**
-    *   Place your new `.sh` file in the appropriate subdirectory within `scripts/`.
-    *   Follow the header and documentation format found in the existing scripts.
-    *   Use the `{{VARIABLE_NAME}}` template syntax for any secrets or sensitive configuration values.
-
-2.  **Update the Orchestrator Menu:**
-    *   Open `main.sh` for editing.
-    *   Add a new `echo` line to the `show_menu()` function to display your new script as a menu option.
-
-3.  **Update the Orchestrator Logic:**
-    *   In `main.sh`, find the `case` statement within the main execution loop.
-    *   Add a new entry for your menu number that calls the `run_script` function with the path to your new script. For example:
-        ```bash
-        4)
-            run_script "scripts/your-category/your-new-script.sh"
-            ;;
-        ```
+| Category                 | Script                                    | Description                                                                 | Usage                                                                           |
+| ------------------------ | ----------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| **Oracle Cloud**         | `manage-nsg-rules.sh`                     | Add, remove, or list rules in an OCI Network Security Group.                | `./manage-nsg-rules.sh <nsg_ocid> <list\|add\|remove> [options]`              |
+|                          | `manage-block-volumes.sh`                 | Create, attach, detach, list, and delete OCI block volumes.                 | `./manage-block-volumes.sh <action> [options]`                                  |
+| **Docker Advanced**      | `selective-cleanup.sh`                    | Selectively clean up Docker images, volumes, and other resources.           | `./selective-cleanup.sh [--images\|--volumes\|--all] [options]`                   |
+|                          | `inspect-resource-usage.sh`               | Show a sorted report of real-time container resource usage (CPU/Mem).       | `./inspect-resource-usage.sh [--sort-by <cpu\|mem>] [--top <n>]`                 |
+| **Coolify Management**   | `manage-application.sh`                   | Restart, redeploy, or check the status of a Coolify application via API.    | `./manage-application.sh <app_uuid> <status\|restart\|redeploy>`                  |
+| **Network Automation**   | `manage-dns-records.sh`                   | Manage Cloudflare DNS records (list, add, delete).                          | `./manage-dns-records.sh <list\|add\|delete> [options]`                           |
+| **Security & Hardening** | `get-ssl-certificate.sh`                  | Obtain a Let's Encrypt SSL certificate using Certbot.                       | `sudo ./get-ssl-certificate.sh <domain.name>`                                   |
+| **Backup & Recovery**    | `perform-s3-backup.sh`                    | Compresses, encrypts, and uploads a directory to S3-compatible storage.     | `./perform-s3-backup.sh <path_to_directory>`                                    |
+| **Monitoring & Alerting**| `send-alert.sh`                           | Sends a formatted message to a Discord/Slack webhook.                       | `./send-alert.sh --title "..." --message "..." --level <INFO\|WARNING\|CRITICAL>` |
+| **Maintenance**          | `system-update-and-health-check.sh`       | Updates system packages, cleans up, and sends a health report.              | `sudo ./system-update-and-health-check.sh`                                      |
