@@ -1,5 +1,5 @@
 #!/bin/bash
-# sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/Daniel-OS01/scripts/refs/heads/main/Docker-Cleanup-Management.sh)"
+# sudo bash -c "$(curl -fsSL https://github.com/Daniel-OS01/Scripts/blob/main/docker/Docker-Cleanup-Management.sh)"
 # A comprehensive Docker management script with an interactive menu.
 # This script combines all the commands discussed in our conversation.
 
