@@ -21,10 +21,15 @@ VERSION="3.1"
 REPORT="/var/log/dokploy_diagnostics_$(date +%Y%m%d_%H%M%S).txt"
 GREEN='\033[0;32m'; RED='\033[0;31m'; YLW='\033[1;33m'; NC='\033[0m'
 
-# --- User Customizable Variables ---
-# IMPORTANT: Update these before running the script for your specific setup.
-TRAEFIK_EMAIL="admin@example.com" # Your email for Let's Encrypt certificates
-DEFAULT_DOMAIN="trafic.psy-tech.link" # The primary domain to check and configure
+# --- Configuration ---
+# This script uses the following variables injected by the main.sh orchestrator
+# from the central config.env file:
+# - LETSENCRYPT_EMAIL: Used for ACME registration with Traefik.
+# - DOMAIN_NAME: Used as the default domain for DNS and Traefik router checks.
+#
+# For clarity in this script, we assign them to local variables.
+TRAEFIK_EMAIL="$LETSENCRYPT_EMAIL"
+DEFAULT_DOMAIN="$DOMAIN_NAME"
 # -----------------------------------
 
 

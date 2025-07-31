@@ -8,11 +8,12 @@ set -euo pipefail
 IFS=$'\n\t'
 
 # Configuration
+# This script uses OCI_DEFAULT_SECURITY_LIST_OCID from config.env, which is
+# injected by the main.sh orchestrator.
 LOG_DIR="/DATA/Documents"
 mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/oci-manager2-$(date +%Y%m%d-%H%M%S).log"
 OCI_CLI_DEBUG="${OCI_CLI_DEBUG:-0}"
-DEFAULT_SL_OCID={{DEFAULT_SL_OCI}}
 IPTABLES_CHAIN="CASAOS-OCI-PORTS"
 AUTO_TIMER="oci-port-sync.timer"
 AUTO_SERVICE="oci-port-sync.service"
@@ -166,13 +167,15 @@ sync_iptables() {
 # Setup systemd timer & service
 setup_auto_sync() {
   info "Creating systemd service & timer for automatic sync"
+  # The service file will execute this script with the --sync-only flag
+  # and the default security list OCID from the config.
   cat >/etc/systemd/system/oci-port-sync.service <<EOF
 [Unit]
 Description=OCI & iptables port-sync for CasaOS
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/bin/oci-manager2.sh --sync-only \$SL_OCID
+ExecStart=/usr/local/bin/oci-manager2.sh --sync-only $OCI_DEFAULT_SECURITY_LIST_OCID
 EOF
 
   cat >/etc/systemd/system/oci-port-sync.timer <<EOF
@@ -199,12 +202,12 @@ main() {
   gather_ports
 
   echo; info "=== OCI Security List Manager ==="
-  echo "1) Use default security list"
+  echo "1) Use default security list ($OCI_DEFAULT_SECURITY_LIST_OCID)"
   echo "2) Enter custom security list OCID"
   echo "3) Skip OCI setup"
   read -rp "Choose [1-3]: " opt
   case $opt in
-    1) SL_OCID=$DEFAULT_SL_OCID ;;
+    1) SL_OCID=$OCI_DEFAULT_SECURITY_LIST_OCID ;;
     2) read -rp "Enter Security List OCID: " SL_OCID ;;
     3) SL_OCID="" ;;
     *) error "Invalid"; exit 1 ;;

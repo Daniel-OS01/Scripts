@@ -40,11 +40,9 @@ set -e
 set -u
 set -o pipefail
 
-# --- Load Configuration ---
-if ! source "$(dirname "$0")/../config.env"; then
-    echo "Error: Could not load configuration file 'config.env'." >&2
-    exit 1
-fi
+# --- Configuration ---
+# This script assumes that all necessary variables (DNS_PROVIDER_API_KEY, etc.)
+# have been exported into the environment by the main.sh orchestrator.
 
 # --- Check Prerequisites ---
 if ! command -v curl &> /dev/null || ! command -v jq &> /dev/null; then

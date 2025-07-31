@@ -42,14 +42,10 @@ set -u
 # Pipelines fail if any command fails, not just the last one.
 set -o pipefail
 
-# --- Load Configuration ---
-# Source the centralized config file. The `dirname` command ensures the path is
-# correct, even if the script is called from a different directory.
-if ! source "$(dirname "$0")/../config.env"; then
-    echo "Error: Could not load configuration file 'config.env'." >&2
-    echo "Please ensure it exists and is readable." >&2
-    exit 1
-fi
+# --- Configuration ---
+# This script assumes that all necessary variables (OCI_REGION, etc.) have been
+# exported into the environment. The main.sh orchestrator handles this by
+# injecting the contents of config.env before execution.
 
 # --- Functions ---
 

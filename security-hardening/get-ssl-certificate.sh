@@ -33,11 +33,9 @@ set -e
 set -u
 set -o pipefail
 
-# --- Load Configuration ---
-if ! source "$(dirname "$0")/../config.env"; then
-    echo "Error: Could not load configuration file 'config.env'." >&2
-    exit 1
-fi
+# --- Configuration ---
+# This script assumes that LETSENCRYPT_EMAIL has been exported into the
+# environment by the main.sh orchestrator.
 
 # --- Check Prerequisites ---
 if ! command -v certbot &> /dev/null; then

@@ -39,12 +39,8 @@ set -e
 set -u
 set -o pipefail
 
-# --- Load Configuration ---
-# Although this script doesn't use variables from it, sourcing the config
-# is a standard practice for consistency across all scripts.
-if ! source "$(dirname "$0")/../config.env"; then
-    echo "Warning: Could not load configuration file 'config.env'." >&2
-fi
+# --- Configuration ---
+# This script is self-contained and does not require variables from config.env.
 
 # --- Default Flags ---
 CLEAN_ALL=false

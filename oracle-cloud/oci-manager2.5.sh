@@ -14,10 +14,12 @@ LOG_FILE="$LOG_DIR/oci-manager2-$(date +%Y%m%d-%H%M%S).log"
 exec > >(tee -a "$LOG_FILE") 2>&1
 
 # ──────────────────── Constants ────────────────────────
-TENANCY_OCID={{TENANCY_OCID}}
-VCN_OCID={{VCN_OCID}}
-INSTANCE_OCID={{INSTANCE_OCID}}
-DEFAULT_SECURITY_LIST_OCID={{DEFAULT_SECURITY_LIST_OCID}}
+# This script assumes the following variables are exported from config.env
+# by the main.sh orchestrator:
+# - OCI_TENANCY_OCID
+# - OCI_VCN_OCID
+# - OCI_INSTANCE_OCID
+# - OCI_DEFAULT_SECURITY_LIST_OCID
 
 CHAIN="CASAOS-OCI-PORTS"
 SERVICE="/etc/systemd/system/oci-port-sync.service"
@@ -781,12 +783,12 @@ interactive() {
   # Security‐List selection
   PS3="Choose Security List [1-4]: "
   select opt in \
-    "Use default [$DEFAULT_SECURITY_LIST_OCID]" \
+    "Use default [$OCI_DEFAULT_SECURITY_LIST_OCID]" \
     "Enter custom OCID" \
     "Skip OCI sync" \
     "Scan for duplicates (iptables & OCI)"; do
     case $REPLY in
-      1) SL="$DEFAULT_SECURITY_LIST_OCID"; break ;;
+      1) SL="$OCI_DEFAULT_SECURITY_LIST_OCID"; break ;;
       2) read -rp "Enter Security List OCID: " SL; break ;;
       3) SL=""; break ;;
       4) scan_and_remove_duplicates; return ;;

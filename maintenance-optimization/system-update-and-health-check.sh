@@ -30,11 +30,9 @@ set -e
 set -u
 set -o pipefail
 
-# --- Load Configuration ---
-if ! source "$(dirname "$0")/../config.env"; then
-    echo "Error: Could not load configuration file 'config.env'." >&2
-    exit 1
-fi
+# --- Configuration ---
+# This script assumes it is run in an environment where any necessary variables
+# have been exported by the main.sh orchestrator.
 
 # --- Check for Sudo ---
 if [ "$EUID" -ne 0 ]; then
@@ -101,21 +99,12 @@ gather_health_report
 echo "System health report generated."
 echo
 
-# 3. Send notification
-ALERT_SCRIPT_PATH="$(dirname "$0")/../monitoring-alerts/send-alert.sh"
-if [ -f "$ALERT_SCRIPT_PATH" ]; then
-    echo "Sending health report via notification webhook..."
-    bash "$ALERT_SCRIPT_PATH" \
-        --title "System Maintenance & Health Report for $(hostname)" \
-        --message "$HEALTH_REPORT" \
-        --level "INFO"
-    echo "Report sent."
-else
-    echo "Warning: 'send-alert.sh' not found. Skipping notification." >&2
-    echo "--- Health Report ---"
-    echo -e "$HEALTH_REPORT"
-    echo "---------------------"
-fi
+# 3. Output health report
+echo "--- Health Report ---"
+echo -e "$HEALTH_REPORT"
+echo "---------------------"
+# In a remote execution model, this script's output can be piped to the
+# send-alert.sh script by the orchestrator if desired.
 
 echo
 echo "--- System maintenance script finished successfully. ---"

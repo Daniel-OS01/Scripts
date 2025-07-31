@@ -1,15 +1,17 @@
 #!/bin/bash
 # ==============================================================================
-#                 Main Automation Script Orchestrator
+#                 Remote Script Injector Orchestrator
 # ==============================================================================
 #
 # Description:
-#   This script provides a centralized, menu-driven interface to access and
-#   run all the automation scripts in this repository. It sources the main
-#   config file and provides a user-friendly way to execute complex tasks.
+#   This script provides a menu to run a suite of automation scripts remotely.
+#   It fetches a central configuration file and the chosen script from a
+#   private GitHub repository, injects the configuration into the script at
+#   runtime, and then executes it. This allows for centralized management
+#   of both scripts and configuration.
 #
 # Usage:
-#   ./main.sh
+#   sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/Daniel-OS01/Scripts/refs/heads/main/main.sh)"
 #
 # ==============================================================================
 
@@ -17,15 +19,9 @@ set -e
 set -u
 set -o pipefail
 
-# --- Load Configuration ---
-# Source the config file to make all variables available to this script
-# and any sub-scripts it calls.
-CONFIG_PATH="$(dirname "$0")/config.env"
-if ! source "$CONFIG_PATH"; then
-    echo "Error: Could not load configuration file '$CONFIG_PATH'." >&2
-    echo "Please ensure it exists and is correctly configured." >&2
-    exit 1
-fi
+# --- Configuration ---
+# The base URL of the GitHub repository where the scripts are hosted.
+readonly GITHUB_BASE_URL="https://raw.githubusercontent.com/Daniel-OS01/Scripts/refs/heads/main"
 
 # --- Style Definitions ---
 readonly COLOR_BLUE='\033[1;34m'
@@ -33,6 +29,17 @@ readonly COLOR_GREEN='\033[1;32m'
 readonly COLOR_YELLOW='\033[1;33m'
 readonly COLOR_RED='\033[1;31m'
 readonly COLOR_RESET='\033[0m'
+
+# --- Bootstrap ---
+echo -e "${COLOR_BLUE}Initializing orchestrator and fetching remote configuration...${COLOR_RESET}"
+CONFIG_CONTENT=$(curl -fsSL "${GITHUB_BASE_URL}/config.env")
+if [ -z "$CONFIG_CONTENT" ]; then
+    echo -e "${COLOR_RED}Fatal: Could not fetch 'config.env' from the repository. Aborting.${COLOR_RESET}" >&2
+    echo -e "${COLOR_RED}Please ensure the repository is correct and you have access.${COLOR_RESET}" >&2
+    exit 1
+fi
+echo -e "${COLOR_GREEN}Configuration loaded successfully.${COLOR_RESET}"
+
 
 # --- Functions ---
 
@@ -46,57 +53,67 @@ show_menu() {
     echo -e "  ${COLOR_YELLOW}Oracle Cloud${COLOR_RESET}"
     echo "    [1] Manage NSG Rules"
     echo "    [2] Manage Block Volumes"
+    echo "    [3] Add Port (iptables & OCI)"
+    echo "    [4] OCI Manager v2 (Interactive)"
+    echo "    [5] OCI Manager v2.5 (Interactive)"
+    echo "    [6] Dokploy/Traefik Doctor"
+    echo "    [7] VPS Comprehensive Diagnostics"
     echo
     echo -e "  ${COLOR_YELLOW}Docker Advanced${COLOR_RESET}"
-    echo "    [3] Selective Resource Cleanup"
-    echo "    [4] Inspect Resource Usage"
+    echo "    [8] Selective Resource Cleanup"
+    echo "    [9] Inspect Resource Usage"
+    echo "    [10] Docker Cleanup & Management (Menu)"
+    echo "    [11] Simple Docker Cleanup"
     echo
     echo -e "  ${COLOR_YELLOW}Coolify Management${COLOR_RESET}"
-    echo "    [5] Manage Application State"
+    echo "    [12] Manage Application State"
     echo
     echo -e "  ${COLOR_YELLOW}Network Automation${COLOR_RESET}"
-    echo "    [6] Manage DNS Records (Cloudflare)"
+    echo "    [13] Manage DNS Records (Cloudflare)"
     echo
     echo -e "  ${COLOR_YELLOW}Security & Hardening${COLOR_RESET}"
-    echo "    [7] Get Let's Encrypt SSL Certificate"
+    echo "    [14] Get Let's Encrypt SSL Certificate"
     echo
     echo -e "  ${COLOR_YELLOW}Backup & Recovery${COLOR_RESET}"
-    echo "    [8] Perform Encrypted S3 Backup"
+    echo "    [15] Perform Encrypted S3 Backup"
     echo
     echo -e "  ${COLOR_YELLOW}Monitoring & Alerting${COLOR_RESET}"
-    echo "    [9] Send a Custom Alert"
+    echo "    [16] Send a Custom Alert (Interactive)"
     echo
     echo -e "  ${COLOR_YELLOW}Maintenance & Optimization${COLOR_RESET}"
-    echo "    [10] Run System Update & Health Check"
+    echo "    [17] Run System Update & Health Check"
     echo
     echo "  --------------------------------------"
     echo -e "  [0] ${COLOR_RED}Exit${COLOR_RESET}"
     echo -e "${COLOR_BLUE}========================================${COLOR_RESET}"
 }
 
-# Function to execute a script
-# Arg 1: Script Path, Args 2+: Arguments for the script
+# Function to execute a remote script with injected config
+# Arg 1: The relative path to the script in the repository
+# Args 2+: Arguments to pass to the target script
 run_script() {
     local script_path="$1"
     shift
+    local script_url="${GITHUB_BASE_URL}/${script_path}"
 
-    local script_dir
-    script_dir=$(dirname "$0")
-    local full_script_path="${script_dir}/${script_path}"
-
-    echo -e "${COLOR_GREEN}Executing: ${full_script_path} $@ ${COLOR_RESET}"
-    echo "------------------------------------------------------------"
-
-    # Ensure the script is executable
-    if [ ! -x "$full_script_path" ]; then
-        echo "Warning: Script not executable. Adding execute permission."
-        chmod +x "$full_script_path"
+    echo -e "\n${COLOR_BLUE}Fetching remote script: ${script_path}...${COLOR_RESET}"
+    local script_content
+    script_content=$(curl -fsSL "$script_url")
+    if [ -z "$script_content" ]; then
+        echo -e "${COLOR_RED}Error: Failed to fetch script from '$script_url'.${COLOR_RESET}" >&2
+        return
     fi
 
-    # Execute the script, passing all remaining arguments to it
-    # We use `bash` to ensure consistent execution environment
-    bash "$full_script_path" "$@"
+    # Combine the config and the script content. The config is sourced first.
+    local combined_script
+    combined_script="${CONFIG_CONTENT}
+${script_content}"
 
+    echo -e "${COLOR_GREEN}Executing script with injected configuration...${COLOR_RESET}"
+    echo "------------------------------------------------------------"
+    # Execute the combined script in a subshell, passing along any arguments.
+    # The '--' is important to separate arguments for 'bash' from arguments for the script.
+    bash -c "$combined_script" -- "$@"
     echo "------------------------------------------------------------"
     echo -e "${COLOR_GREEN}Execution finished.${COLOR_RESET}"
 }
@@ -105,28 +122,32 @@ run_script() {
 # --- Main Loop ---
 while true; do
     show_menu
-    read -p "Enter your choice [0-10]: " choice
+    read -p "Enter your choice [0-17]: " choice
 
-    # Default to empty args
     args=()
-    # For choices that need arguments, prompt the user
-    if [[ "$choice" -ge 1 && "$choice" -le 8 ]] || [[ "$choice" -eq 10 ]]; then
+    # For choices that need arguments, prompt the user, except for the interactive ones.
+    if [[ "$choice" -ge 1 && "$choice" -le 17 && "$choice" -ne 16 ]]; then
         echo "Enter all arguments for the script on one line (e.g., list --all), or press Enter for none:"
-        # Use read -r to handle backslashes correctly
         read -r -a args
     fi
 
     case $choice in
         1) run_script "oracle-cloud/manage-nsg-rules.sh" "${args[@]}" ;;
         2) run_script "oracle-cloud/manage-block-volumes.sh" "${args[@]}" ;;
-        3) run_script "docker-advanced/selective-cleanup.sh" "${args[@]}" ;;
-        4) run_script "docker-advanced/inspect-resource-usage.sh" "${args[@]}" ;;
-        5) run_script "coolify-management/manage-application.sh" "${args[@]}" ;;
-        6) run_script "network-automation/manage-dns-records.sh" "${args[@]}" ;;
-        7) run_script "security-hardening/get-ssl-certificate.sh" "${args[@]}" ;;
-        8) run_script "backup-recovery/perform-s3-backup.sh" "${args[@]}" ;;
-        9)
-            # Special interactive handling for the alert script to make it more user-friendly
+        3) run_script "oracle-cloud/oci-add-port.sh" "${args[@]}" ;;
+        4) run_script "oracle-cloud/oci-manager2.sh" "${args[@]}" ;;
+        5) run_script "oracle-cloud/oci-manager2.5.sh" "${args[@]}" ;;
+        6) run_script "oracle-cloud/dokploy-traefik-doctor.sh" "${args[@]}" ;;
+        7) run_script "oracle/VPS Comprehensive Diagnostics – ARM64 Ubuntu.sh" "${args[@]}" ;;
+        8) run_script "docker-advanced/selective-cleanup.sh" "${args[@]}" ;;
+        9) run_script "docker-advanced/inspect-resource-usage.sh" "${args[@]}" ;;
+        10) run_script "docker-advanced/Docker-Cleanup-Management.sh" "${args[@]}" ;;
+        11) run_script "docker-advanced/cleanup.sh" "${args[@]}" ;;
+        12) run_script "coolify-management/manage-application.sh" "${args[@]}" ;;
+        13) run_script "network-automation/manage-dns-records.sh" "${args[@]}" ;;
+        14) run_script "security-hardening/get-ssl-certificate.sh" "${args[@]}" ;;
+        15) run_script "backup-recovery/perform-s3-backup.sh" "${args[@]}" ;;
+        16)
             echo "Enter alert title:"
             read -r title
             echo "Enter alert message:"
@@ -135,7 +156,7 @@ while true; do
             read -r level
             run_script "monitoring-alerts/send-alert.sh" --title "$title" --message "$message" --level "$level"
             ;;
-        10) run_script "maintenance-optimization/system-update-and-health-check.sh" "${args[@]}" ;;
+        17) run_script "maintenance-optimization/system-update-and-health-check.sh" "${args[@]}" ;;
         0)
             echo "Exiting orchestrator."
             break

@@ -3,8 +3,9 @@
 set -o nounset -o pipefail
 [[ -n "${BASH_VERSION:-}" ]] || { echo "Please run with bash, not sh."; exit 1; }
 
-# --- Config ---
-DEFAULT_SECURITY_LIST_OCID={{DEFAULT_SECURITY_LIST_OCID}}}
+# --- Configuration ---
+# This script uses OCI_DEFAULT_SECURITY_LIST_OCID from config.env as the
+# default security list. It is injected by the main.sh orchestrator.
 CHAIN="CASAOS-OCI-PORTS"
 OCI_FLAGS=""
 
@@ -66,8 +67,9 @@ for PROTO in "${PROTOS[@]}"; do
 done
 
 # --- Ask for Security List OCID ---
+# Use the variable from config.env as the default if the user just presses Enter.
 read -rp "Enter OCI Security List OCID (or press Enter for default): " SL
-SL=${SL:-$DEFAULT_SECURITY_LIST_OCID}
+SL=${SL:-$OCI_DEFAULT_SECURITY_LIST_OCID}
 
 data=$(oci $OCI_FLAGS network security-list get --security-list-id "$SL" --query 'data' --raw-output)
 ingress_rules=$(echo "$data" | jq '."ingress-security-rules"')
