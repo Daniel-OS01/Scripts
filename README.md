@@ -55,6 +55,7 @@ Here is a list of all the scripts currently available in the system.
 | ------------------------ | ----------------------------------------- | --------------------------------------------------------------------------- |
 | **Oracle Cloud**         | `manage-nsg-rules.sh`                     | Add, remove, or list rules in an OCI Network Security Group.                |
 |                          | `manage-block-volumes.sh`                 | Create, attach, detach, list, and delete OCI block volumes.                 |
+|                          | `manage-instance-state.sh`                | Start, stop, and reboot OCI Compute instances.                              |
 |                          | `oci-add-port.sh`                         | A wizard to add a port to both iptables and an OCI Security List.           |
 |                          | `oci-manager2.sh`                         | An interactive menu to sync Docker/CasaOS ports to OCI and iptables.        |
 |                          | `oci-manager2.5.sh`                       | A more advanced, robust version of the OCI port sync manager.               |
@@ -62,11 +63,15 @@ Here is a list of all the scripts currently available in the system.
 |                          | `VPS Comprehensive Diagnostics`           | Gathers an exhaustive diagnostics report for an ARM64 Ubuntu VPS.           |
 | **Docker Advanced**      | `selective-cleanup.sh`                    | Selectively clean up Docker images, volumes, and other resources.           |
 |                          | `inspect-resource-usage.sh`               | Show a sorted report of real-time container resource usage (CPU/Mem).       |
+|                          | `image-vulnerability-scan.sh`             | Scans a Docker image for known vulnerabilities (CVEs) using Trivy.          |
 |                          | `Docker-Cleanup-Management.sh`            | A full menu-driven script for various Docker cleanup tasks.                 |
 |                          | `cleanup.sh`                              | (Identical to above) A comprehensive Docker management script.              |
 | **Coolify Management**   | `manage-application.sh`                   | Restart, redeploy, or check the status of a Coolify application via API.    |
 | **Network Automation**   | `manage-dns-records.sh`                   | Manage Cloudflare DNS records (list, add, delete).                          |
+|                          | `check-ssl-expiry.sh`                     | Checks a domain's SSL certificate expiration date and warns if needed.      |
 | **Security & Hardening** | `get-ssl-certificate.sh`                  | Obtain a Let's Encrypt SSL certificate using Certbot.                       |
+|                          | `configure-fail2ban.sh`                   | Installs and configures Fail2Ban for SSH brute-force protection.            |
 | **Backup & Recovery**    | `perform-s3-backup.sh`                    | Compresses, encrypts, and uploads a directory to S3-compatible storage.     |
 | **Monitoring & Alerting**| `send-alert.sh`                           | Sends a formatted message to a Discord/Slack webhook.                       |
 | **Maintenance**          | `system-update-and-health-check.sh`       | Updates system packages, cleans up, and provides a health report.           |
+|                          | `shared-hosting-diagnostics.sh`           | Runs a comprehensive diagnostic check for shared hosting environments.      |
